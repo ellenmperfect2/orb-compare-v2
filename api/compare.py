@@ -317,10 +317,15 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             # Run both queries concurrently
-            answer_a, answer_b = asyncio.run(asyncio.gather(
-                query_mintlify("metronome", question),
-                query_mintlify("orb", question),
-            ))
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                answer_a, answer_b = loop.run_until_complete(asyncio.gather(
+                    query_mintlify("metronome", question),
+                    query_mintlify("orb", question),
+                ))
+            finally:
+                loop.close()
 
             page = render_html(question, answer_a, answer_b)
             body = page.encode("utf-8")

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Docs Comparison — Orb Internal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0c0c; --surf: #141414; --surf2: #1a1a1a;
+  --b0: #242424; --b1: #2e2e2e;
+  --tx: #e6e2d9; --txm: #888; --txd: #444;
+  --ca: #e8c547; --cb: #5b9cf6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--tx);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px;
+}
+
+/* grain overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: .025;
+}
+
+.wrap {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 560px;
+  display: flex; flex-direction: column; align-items: center; gap: 40px;
+}
+
+/* product labels */
+.vs-row {
+  display: flex; align-items: center; gap: 16px;
+}
+.prod {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.prod-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+}
+.prod-dot.a { background: rgba(232,197,71,.12); color: var(--ca); border: 1px solid rgba(232,197,71,.25); }
+.prod-dot.b { background: rgba(91,156,246,.12); color: var(--cb); border: 1px solid rgba(91,156,246,.25); }
+.prod-name {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--txm);
+}
+.vs-divider {
+  font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--txd);
+  font-style: italic; padding-bottom: 18px;
+}
+
+/* heading */
+.heading {
+  text-align: center;
+}
+.heading h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 32px; font-weight: 400; line-height: 1.25;
+  color: var(--tx);
+}
+.heading h1 em { color: var(--ca); font-style: italic; }
+.heading p {
+  margin-top: 10px; font-size: 14px; color: var(--txm); line-height: 1.6;
+}
+
+/* input */
+.input-row {
+  width: 100%;
+  display: flex; gap: 8px;
+}
+.q-input {
+  flex: 1;
+  background: var(--surf); border: 1px solid var(--b1); border-radius: 10px;
+  padding: 13px 18px; color: var(--tx);
+  font-size: 14px; font-family: 'DM Sans', sans-serif;
+  outline: none; transition: border-color .15s;
+}
+.q-input::placeholder { color: var(--txd); }
+.q-input:focus { border-color: var(--ca); }
+.go-btn {
+  padding: 13px 22px; border-radius: 10px;
+  background: var(--ca); border: none; color: #0c0c0c;
+  font-size: 13.5px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: opacity .15s; white-space: nowrap;
+}
+.go-btn:hover { opacity: .85; }
+.go-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* suggested questions */
+.suggestions {
+  width: 100%;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.suggestions-label {
+  font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--txd); margin-bottom: 4px;
+}
+.suggestion {
+  background: var(--surf); border: 1px solid var(--b0); border-radius: 8px;
+  padding: 11px 16px; font-size: 13px; color: var(--txm);
+  cursor: pointer; text-align: left; font-family: 'DM Sans', sans-serif;
+  transition: border-color .15s, color .15s;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.suggestion:hover { border-color: var(--b1); color: var(--tx); }
+.suggestion-arrow { color: var(--txd); font-size: 12px; flex-shrink: 0; }
+
+/* loading overlay */
+.loading-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(12,12,12,.9);
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+}
+.loading-overlay.visible { display: flex; }
+.loading-label {
+  font-family: 'DM Mono', monospace; font-size: 12px; color: var(--txm);
+  letter-spacing: .08em;
+}
+.spinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid var(--b1); border-top-color: var(--ca);
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-sub { font-size: 12px; color: var(--txd); font-family: 'DM Mono', monospace; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="vs-row">
+    <div class="prod">
+      <div class="prod-dot a">M</div>
+      <span class="prod-name">Metronome</span>
+    </div>
+    <div class="vs-divider">vs</div>
+    <div class="prod">
+      <div class="prod-dot b">O</div>
+      <span class="prod-name">Orb</span>
+    </div>
+  </div>
+
+  <div class="heading">
+    <h1>Ask both docs.<br><em>Compare the answers.</em></h1>
+    <p>Type any question and get side-by-side responses<br>from Metronome and Orb's AI doc assistants.</p>
+  </div>
+
+  <div class="input-row">
+    <input
+      class="q-input"
+      id="question"
+      type="text"
+      placeholder="How do enterprise commits work?"
+      onkeydown="if(event.key==='Enter') go()"
+      autofocus
+    />
+    <button class="go-btn" id="go-btn" onclick="go()">Compare →</button>
+  </div>
+
+  <div class="suggestions">
+    <div class="suggestions-label">Suggested questions</div>
+    <button class="suggestion" onclick="ask('How do enterprise commits work?')">
+      How do enterprise commits work?
+      <span class="suggestion-arrow">→</span>
+    </button>
+    <button class="suggestion" onclick="ask('How are mid-period subscription changes handled?')">
+      How are mid-period subscription changes handled?
+      <span class="suggestion-arrow">→</span>
+    </button>
+    <button class="suggestion" onclick="ask('What usage aggregation methods are supported?')">
+      What usage aggregation methods are supported?
+      <span class="suggestion-arrow">→</span>
+    </button>
+    <button class="suggestion" onclick="ask('How does revenue recognition work?')">
+      How does revenue recognition work?
+      <span class="suggestion-arrow">→</span>
+    </button>
+    <button class="suggestion" onclick="ask('What pricing models are supported?')">
+      What pricing models are supported?
+      <span class="suggestion-arrow">→</span>
+    </button>
+  </div>
+
+</div>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-label">Querying both assistants…</div>
+  <div class="loading-sub" id="loading-sub">This takes 10–20 seconds</div>
+</div>
+
+<script>
+function ask(q) {
+  document.getElementById('question').value = q;
+  go();
+}
+
+function go() {
+  const q = document.getElementById('question').value.trim();
+  if (!q) return;
+
+  document.getElementById('go-btn').disabled = true;
+  document.getElementById('loading').classList.add('visible');
+
+  // Update loading message after a few seconds
+  setTimeout(() => {
+    document.getElementById('loading-sub').textContent = 'Waiting for responses…';
+  }, 5000);
+
+  window.location.href = '/api/compare?q=' + encodeURIComponent(q);
+}
+</script>
+</body>
+</html>
